@@ -14,16 +14,16 @@ func TestRunnerValidCommand(t *testing.T) {
 		t.Error(err)
 	}
 
-	for runner.status == statusRunning {
-		if runner.status == statusFailed || runner.status == statusTimeout {
+	for runner.Status == statusRunning {
+		if runner.Status == statusFailed || runner.Status == statusTimeout {
 			runner.kill()
 			t.Error("Command failed")
 		}
 		time.Sleep(time.Second * 1)
 	}
 
-	if !strings.Contains(runner.Output, "passString123") {
-		t.Error("Command doesn't contain expected output", runner.Output)
+	if !strings.Contains(runner.output, "passString123") {
+		t.Error("Command doesn't contain expected output", runner.output)
 	}
 }
 
@@ -35,12 +35,12 @@ func TestRunnerInvalidCommand(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for runner.status == statusRunning {
+	for runner.Status == statusRunning {
 		time.Sleep(time.Millisecond * 200)
 	}
 
-	if runner.status != statusFailed {
-		t.Fatal("Unexpected status. Expected failed, got: ", runner.status)
+	if runner.Status != statusFailed {
+		t.Fatal("Unexpected status. Expected failed, got: ", runner.Status)
 	}
 }
 
@@ -52,12 +52,12 @@ func TestRunnerCommandTimeout(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for runner.status == statusRunning {
+	for runner.Status == statusRunning {
 		time.Sleep(time.Second)
 	}
 
-	if runner.status != statusTimeout {
-		t.Fatal("Command didn't timeout. Current status is: ", runner.status)
+	if runner.Status != statusTimeout {
+		t.Fatal("Command didn't timeout. Current status is: ", runner.Status)
 	}
 }
 
@@ -69,12 +69,12 @@ func TestRunnerCommandFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for runner.status == statusRunning {
+	for runner.Status == statusRunning {
 		time.Sleep(time.Millisecond * 100)
 	}
 
-	if runner.status != statusFailed {
-		t.Fatalf("Expected status: %s, got: %s", statusFailed, runner.status)
+	if runner.Status != statusFailed {
+		t.Fatalf("Expected status: %s, got: %s", statusFailed, runner.Status)
 	}
 }
 
@@ -89,8 +89,8 @@ func TestRunnerCommandKill(t *testing.T) {
 	runner.kill()
 	time.Sleep(time.Second)
 	t.Log(runner.Duration)
-	if runner.status != statusUserTerminated {
-		t.Fatalf("Expected status %s, got: %s", statusUserTerminated, runner.status)
+	if runner.Status != statusUserTerminated {
+		t.Fatalf("Expected status %s, got: %s", statusUserTerminated, runner.Status)
 	}
 }
 
@@ -104,15 +104,15 @@ func TestReadingFromRunnerChannelSingleLine(t *testing.T) {
 	}()
 
 	runner.run()
-	for runner.status == statusRunning {
+	for runner.Status == statusRunning {
 		time.Sleep(time.Millisecond * 100)
 	}
 
-	if runner.status != statusSuccess {
-		t.Fatal("Expected succes status, got: ", runner.status)
+	if runner.Status != statusSuccess {
+		t.Fatal("Expected succes status, got: ", runner.Status)
 	}
 
-	if <-outChan != runner.Output {
+	if <-outChan != runner.output {
 		t.Fatal("Failed to get identical data from channel and struct")
 	}
 }
@@ -129,15 +129,15 @@ func TestReadingFromRunnerChannelLongDuration(t *testing.T) {
 	}()
 
 	runner.run()
-	for runner.status == statusRunning {
+	for runner.Status == statusRunning {
 		time.Sleep(time.Millisecond * 100)
 	}
 
-	if runner.status != statusSuccess {
-		t.Fatal("Expected succes status, got: ", runner.status)
+	if runner.Status != statusSuccess {
+		t.Fatal("Expected succes status, got: ", runner.Status)
 	}
 
-	if chanOut != runner.Output {
+	if chanOut != runner.output {
 		t.Fatal("Failed to get identical data from channel and struct")
 	}
 }
@@ -154,16 +154,16 @@ func TestReadingFromRunnerChannelLongDurationTimeout(t *testing.T) {
 	}()
 
 	runner.run()
-	for runner.status == statusRunning {
+	for runner.Status == statusRunning {
 		time.Sleep(time.Millisecond * 100)
 	}
 
-	if runner.status != statusTimeout {
-		t.Fatalf("Expected status: %s, got: %s", statusSuccess, runner.status)
+	if runner.Status != statusTimeout {
+		t.Fatalf("Expected status: %s, got: %s", statusSuccess, runner.Status)
 	}
 
-	if chanOut != runner.Output {
+	if chanOut != runner.output {
 		t.Fatalf("Failed to get identical data from channel and struct. Chan: %s Var: %s",
-			chanOut, runner.Output)
+			chanOut, runner.output)
 	}
 }

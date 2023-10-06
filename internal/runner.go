@@ -19,18 +19,25 @@ const (
 	statusUserTerminated = "terminated"
 )
 
-type runner struct {
-	RunnerName string        `json:"runner_name"`
-	CmdString  string        `json:"cmd_string"`
-	Args       string        `json:"args"`
-	Timeout    int           `json:"timeout"`
-	StartTime  time.Time     `json:"start_time"`
-	StopTime   time.Time     `json:"stop_time"`
-	Duration   time.Duration `json:"duration"`
-	Output     string        `json:"output"`
-	ErrorMsg   string        `json:"error_msg"`
+type RunnerRequest struct {
+	Name    string `json:"name,omitempty"`
+	Cmd     string `json:"cmd,omitempty"`
+	Args    string `json:"args,omitempty"`
+	Timeout int    `json:"timeout,omitempty"`
+}
 
-	status        string
+type runner struct {
+	RunnerName string    `json:"runner_name"`
+	CmdString  string    `json:"cmd_string"`
+	Args       string    `json:"args"`
+	Timeout    int       `json:"timeout"`
+	StartTime  time.Time `json:"start_time"`
+	StopTime   time.Time `json:"stop_time,omitempty"`
+	Duration   float64   `json:"duration"`
+	ErrorMsg   string    `json:"error_msg"`
+	Status     string    `json:"status,omitempty"`
+
+	output        string
 	cmd           *exec.Cmd
 	cancel        context.CancelFunc
 	streamManager *streamManager
@@ -41,7 +48,7 @@ type runner struct {
 // Writer implementation for CMD outputs.
 // Writes into struct var as well as to streamManager
 func (r *runner) Write(p []byte) (int, error) {
-	r.Output += string(p)
+	r.output += string(p)
 	r.managerLock.Lock()
 	r.streamManager.Write(p)
 	r.managerLock.Unlock()
@@ -55,8 +62,8 @@ func newRunner(name string, cmd string, args string, timeout int) *runner {
 		CmdString:  cmd,
 		Args:       args,
 		Timeout:    timeout,
-		Output:     "",
-		status:     statusReady,
+		output:     "",
+		Status:     statusReady,
 	}
 
 	runner.streamManager = newStreamManager()
@@ -67,7 +74,6 @@ func newRunner(name string, cmd string, args string, timeout int) *runner {
 // Runs command as configured with newRunner func.
 func (w *runner) run() error {
 	// Context is needed to provide timeout option
-	// and to terminate process.
 	log.Printf("running %s with command: %s %s", w.RunnerName, w.CmdString, w.Args)
 	w.ctx, w.cancel = context.WithTimeout(context.Background(),
 		time.Duration(w.Timeout*int(time.Second)))
@@ -82,7 +88,7 @@ func (w *runner) run() error {
 	// Get start time and start command using nonblocking cmd.Start()
 	w.StartTime = time.Now()
 	w.cmd.Start()
-	w.status = statusRunning
+	w.Status = statusRunning
 
 	// Wait for cmd to finish in goroutine
 	// Sets the finished flag once done
@@ -90,23 +96,23 @@ func (w *runner) run() error {
 	go func() {
 		err := w.cmd.Wait()
 		w.StopTime = time.Now()
-		w.Duration = time.Since(w.StartTime)
+		w.Duration = time.Since(w.StartTime).Seconds()
 
 		w.managerLock.Lock()
 		w.streamManager.CloseManager()
 		w.managerLock.Unlock()
 
-		if w.status == statusUserTerminated {
+		if w.Status == statusUserTerminated {
 			return
 		}
 
-		w.status = statusSuccess
+		w.Status = statusSuccess
 
 		if err != nil {
 			if w.ctx.Err() == context.DeadlineExceeded {
-				w.status = statusTimeout
+				w.Status = statusTimeout
 			} else {
-				w.status = statusFailed
+				w.Status = statusFailed
 			}
 			w.ErrorMsg += err.Error()
 		}
@@ -120,10 +126,14 @@ func (w *runner) registerClient(id string) chan []byte {
 	return w.streamManager.Subscribe(id)
 }
 
+func (w *runner) unregisterClient(id string) {
+	w.streamManager.Unsubscribe(id)
+}
+
 // End process using cancler
 func (w *runner) kill() error {
 	err := w.cmd.Process.Kill()
-	w.status = statusUserTerminated
+	w.Status = statusUserTerminated
 	if err != nil {
 		return err
 	}

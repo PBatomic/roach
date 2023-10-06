@@ -1,10 +1,7 @@
 package internal
 
-import "sync"
-
 type streamManager struct {
 	Subscribers map[string]chan []byte
-	lock        sync.Mutex
 }
 
 func newStreamManager() *streamManager {
