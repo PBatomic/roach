@@ -1,0 +1,9 @@
+{{ range $key, $value := . }}
+    <div class="table-row text-xs bg-gray-700 hover:bg-slate-600 active:focus:bg-slate-600" hx-trigger="click" hx-target="#consoleOut" hx-get="/output?runnerName={{$key}}"
+    hx-swap="innerHTML">
+        <div class="table-cell border-t border-gray-950 pl-2 pb-2 ">{{ $key }} </div>
+        <div class="table-cell border-t border-gray-950 p-2">{{ $value.CmdString }} {{ $value.Args}}</div>
+        <div class="table-cell border-t border-gray-950 {{ $value.GenerateStatusColor }} p-2" >{{ $value.Status }}</div>
+        <div class="table-cell border-t border-gray-950 p-2", hx-delete="/api/runner/{{$key}}" hx-trigger="click">Stop</div>  
+    </div>
+{{ end }}

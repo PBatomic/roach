@@ -52,10 +52,10 @@ func (r *roach) Start() {
 	router.Static("/static/", "/tmp/static")
 
 	// Dashboard related endpoints
-	router.GET("/dashboard", nil)
-	router.GET("/dashboard/liveout", nil)
-	router.GET("/dashboard/runners", nil)
-	router.GET("/dashboard/clean", nil)
+	router.GET("/dashboard", r.serveDashboard)
+	router.GET("/dashboard/liveout", r.serveConsoleOutElement)
+	router.GET("/dashboard/runners", r.serveRunners)
+	router.GET("/dashboard/clean", r.clean)
 
 	err := router.Run(r.listenAddr)
 	if err != nil {
@@ -73,7 +73,7 @@ func (r *roach) clean(c *gin.Context) {
 }
 
 func (r *roach) serveDashboard(c *gin.Context) {
-	tmpl := template.Must(template.ParseFiles("/tmp/roach/static/dashboard.html"))
+	tmpl := template.Must(template.ParseFiles("/tmp/static/dashboard.html"))
 	tmpl.Execute(c.Writer, r.runners)
 }
 

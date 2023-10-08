@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.codeScroll {
+    max-height: 250px;
+    font-size: small;
+    width: fit-content;
+    overflow-y: scroll;
+
+    background-color: rgb(35, 7, 65);
+}
+
+.atomimg {
+    transition: opacity 300ms ease-in;
+}

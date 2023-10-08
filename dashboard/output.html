@@ -1,0 +1,18 @@
+<div class="font-bold font-sans p-2 hover:text-yellow-500 hover:cursor-pointer bg-sky-900" hx-get="/non"
+    hx-target="#consoleOut" hx-trigger="click" hx-swap="innerHTML">close output
+</div>
+<pre><code>
+    
+    <div class="consoleOutput font-mono text-xs overflow-y-auto max-h-80 min-h-80
+border rounded-s border-gray-600 bg-gray-900 p-2" hx-ext="sse"  sse-connect="/api/runner/{{$.RunnerName}}/stream" hx-swap="beforeend"
+sse-swap="message, close">==== Loaded output history: ====
+<div sse-swap="message"></div>
+<div sse-swap="close" hx-swap="outerHTML"></div>
+
+<div hx-trigger="load" hx-get="/api/runner/{{$.RunnerName}}/output"></div>
+
+
+==== Live output: ====  
+</div>
+</code>
+</pre>
