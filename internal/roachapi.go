@@ -97,7 +97,10 @@ func (r *roach) serveConsoleOutElement(c *gin.Context) {
 func (r *roach) addRunner(c *gin.Context) {
 	var rReq RunnerRequest
 	if err := c.BindJSON(&rReq); err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400, "message": "Invalid json message received", "error": err.Error()})
+		return
 	}
 
 	r.runnerLock.Lock()
@@ -112,14 +115,17 @@ func (r *roach) addRunner(c *gin.Context) {
 	}
 	r.runnerLock.Unlock()
 
-	log.Printf("adding new worker %s\n", rReq.Name)
-	log.Printf("worker details: Command: %s\tArgs: %s\tTimeout: %ds\n",
+	log.Printf("Adding new runner %s\n", rReq.Name)
+	log.Printf("Runner details: Command: %s\tArgs: %s\tTimeout: %ds\n",
 		rReq.Cmd, rReq.Args, rReq.Timeout)
 
 	runner := newRunner(rReq.Name, rReq.Cmd, rReq.Args, rReq.Timeout)
 	err := runner.run()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400, "message": "Runner unable to start", "error": err})
+		return
 	}
 
 	r.runnerLock.Lock()
@@ -132,6 +138,7 @@ func (r *roach) addRunner(c *gin.Context) {
 // Handle for deleting a runner
 func (r *roach) deleteRunner(c *gin.Context) {
 	name := c.Param("name")
+	silentParam := c.Query("silent")
 	r.runnerLock.Lock()
 	defer r.runnerLock.Unlock()
 	runner := r.runners[name]
@@ -146,10 +153,15 @@ func (r *roach) deleteRunner(c *gin.Context) {
 	log.Println("Deleting runner", name)
 	runner.kill()
 	delete(r.runners, name)
-
-	c.JSON(http.StatusOK, gin.H{
-		"status": fmt.Sprintf("resource %v deleted successfully", name),
-	})
+	// Hacky way to clean up all the windows in dashboard.
+	if silentParam == "true" {
+		c.Writer.WriteString("")
+		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"status": fmt.Sprintf("resource %v deleted successfully", name),
+		})
+	}
 }
 
 func (r *roach) readRunners(c *gin.Context) {
@@ -232,12 +244,17 @@ func (r *roach) runnerStreamEvents(c *gin.Context) {
 		// Unsubscribe in case of client terminating
 		case end := <-closeNotify:
 			log.Println("client disconnected ", end)
+			r.runnerLock.Lock()
 			runner.unregisterClient(clientId)
+			r.runnerLock.Unlock()
 			return false
 		default:
 			if runner.Status != statusRunning {
 				c.SSEvent("done", "true")
-				return true
+				r.runnerLock.Lock()
+				runner.unregisterClient(clientId)
+				r.runnerLock.Unlock()
+				return false
 			}
 			c.SSEvent("message", string(msg))
 			return true

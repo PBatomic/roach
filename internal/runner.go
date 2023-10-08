@@ -5,7 +5,6 @@ import (
 	"log"
 	"os/exec"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -41,7 +40,6 @@ type runner struct {
 	cmd           *exec.Cmd
 	cancel        context.CancelFunc
 	streamManager *streamManager
-	managerLock   sync.Mutex
 	ctx           context.Context
 }
 
@@ -49,10 +47,7 @@ type runner struct {
 // Writes into struct var as well as to streamManager
 func (r *runner) Write(p []byte) (int, error) {
 	r.output += string(p)
-	r.managerLock.Lock()
 	r.streamManager.Write(p)
-	r.managerLock.Unlock()
-
 	return len(p), nil
 }
 
@@ -89,49 +84,46 @@ func newRunner(name string, cmd string, args string, timeout int) *runner {
 }
 
 // Runs command as configured with newRunner func.
-func (w *runner) run() error {
+func (r *runner) run() error {
 	// Context is needed to provide timeout option
-	log.Printf("running %s with command: %s %s", w.RunnerName, w.CmdString, w.Args)
-	w.ctx, w.cancel = context.WithTimeout(context.Background(),
-		time.Duration(w.Timeout*int(time.Second)))
-	w.cmd = exec.CommandContext(w.ctx, w.CmdString,
-		strings.Split(w.Args, " ")...)
+	log.Printf("running %s with command: %s %s", r.RunnerName, r.CmdString, r.Args)
+	r.ctx, r.cancel = context.WithTimeout(context.Background(),
+		time.Duration(r.Timeout*int(time.Second)))
+	r.cmd = exec.CommandContext(r.ctx, r.CmdString,
+		strings.Split(r.Args, " ")...)
 
 	// Setting to custom writers to get formatted output
 	// saved to our struct
-	w.cmd.Stdout = w
-	w.cmd.Stderr = w
+	r.cmd.Stdout = r
+	r.cmd.Stderr = r
 
 	// Get start time and start command using nonblocking cmd.Start()
-	w.StartTime = time.Now()
-	w.cmd.Start()
-	w.Status = statusRunning
+	r.StartTime = time.Now()
+	r.cmd.Start()
+	r.Status = statusRunning
 
 	// Wait for cmd to finish in goroutine
 	// Sets the finished flag once done
 	// If timeout is reached, we make sure we set the status to statusTimeout
 	go func() {
-		err := w.cmd.Wait()
-		w.StopTime = time.Now()
-		w.Duration = time.Since(w.StartTime).Seconds()
+		err := r.cmd.Wait()
+		r.StopTime = time.Now()
+		r.Duration = time.Since(r.StartTime).Seconds()
+		r.streamManager.CloseManager()
 
-		w.managerLock.Lock()
-		w.streamManager.CloseManager()
-		w.managerLock.Unlock()
-
-		if w.Status == statusUserTerminated {
+		if r.Status == statusUserTerminated {
 			return
 		}
 
-		w.Status = statusSuccess
+		r.Status = statusSuccess
 
 		if err != nil {
-			if w.ctx.Err() == context.DeadlineExceeded {
-				w.Status = statusTimeout
+			if r.ctx.Err() == context.DeadlineExceeded {
+				r.Status = statusTimeout
 			} else {
-				w.Status = statusFailed
+				r.Status = statusFailed
 			}
-			w.ErrorMsg += err.Error()
+			r.ErrorMsg += err.Error()
 		}
 	}()
 	return nil
@@ -139,23 +131,23 @@ func (w *runner) run() error {
 
 // Stream registers subscribes client to stream manager
 // and returns channel with combined stdout/stderr output
-func (w *runner) registerClient(id string) chan []byte {
-	return w.streamManager.Subscribe(id)
+func (r *runner) registerClient(id string) chan []byte {
+	return r.streamManager.Subscribe(id)
 }
 
-func (w *runner) unregisterClient(id string) {
-	w.streamManager.Unsubscribe(id)
+func (r *runner) unregisterClient(id string) {
+	r.streamManager.Unsubscribe(id)
 }
 
 // End process using cancler
-func (w *runner) kill() error {
-	if w.Status == statusRunning {
-		err := w.cmd.Process.Kill()
+func (r *runner) kill() error {
+	if r.Status == statusRunning {
+		err := r.cmd.Process.Kill()
 		if err != nil {
 			return err
 		}
 	}
-	w.Status = statusUserTerminated
+	r.Status = statusUserTerminated
 
 	return nil
 }

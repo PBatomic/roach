@@ -1,17 +1,19 @@
-<div class="font-bold font-sans p-2 hover:text-yellow-500 hover:cursor-pointer bg-sky-900" hx-get="dashboard/clean"
-    hx-target="#consoleOut" hx-trigger="click" hx-swap="innerHTML">close output
-</div>
+<div id="runnerOutputContainer">
+
 <pre><code>
-    
-    <div class="consoleOutput font-mono text-xs overflow-y-auto max-h-80 min-h-80
-border rounded-s border-gray-600 bg-gray-900 p-2" hx-ext="sse"  sse-connect="/api/runner/{{$.RunnerName}}/stream" hx-swap="beforeend"
-sse-swap="message, done">==== Loaded output history: ====
-<div sse-swap="message"></div>
-<div sse-swap="done" hx-swap="outerHTML"></div>
+<div class="consoleOutput font-mono text-xs overflow-y-auto max-h-80 min-h-80
+            border rounded-s border-gray-600 bg-gray-300 " hx-ext="sse"
+            sse-connect="/api/runner/{{$.RunnerName}}/stream" hx-swap="beforeend" 
+            sse-swap="message, done">
+==== Loaded output history: ====
 <div hx-trigger="load" hx-get="/api/runner/{{$.RunnerName}}/output"></div>
-
-
 ==== Live output: ====  
+<div sse-swap="done" hx-swap="outerHTML"></div>
 </div>
 </code>
 </pre>
+<div class="font-bold font-sans p-2 hover:text-red-500 hover:cursor-pointer
+     bg-slate-100" hx-get="dashboard/clean" hx-target="#consoleOut" 
+     hx-trigger="click" hx-swap="innerHTML" id="streamCloseButton">CLOSE
+</div>
+</div>

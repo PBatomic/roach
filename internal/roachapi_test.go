@@ -6,13 +6,12 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 	"testing"
 	"time"
 )
 
 // Following tests are not optimal as they are more of a integration ones
-// Might need to replace with more granular ones. 
+// Might need to replace with more granular ones.
 
 func init() {
 	os.Setenv("ROACH_TOKEN", "X")
@@ -81,8 +80,8 @@ func TestCompleteRunnerLifecycle(t *testing.T) {
 		&RunnerRequest{
 			Name:    "TestApiRunnerLifecycle",
 			Cmd:     "ping",
-			Args:    "google.com -c 10",
-			Timeout: 180,
+			Args:    "google.com -c 20",
+			Timeout: 10,
 		})
 
 	if err != nil {
@@ -135,11 +134,10 @@ func TestCompleteRunnerLifecycle(t *testing.T) {
 		data := make([]byte, 1024)
 		_, err := sseRes.Body.Read(data)
 		if err != nil {
+			if err.Error() == "EOF" {
+				break
+			}
 			t.Fatal(err)
-		}
-		if strings.Contains(string(data), "event:done") {
-			t.Log("Command successfuly ended")
-			break
 		}
 	}
 
