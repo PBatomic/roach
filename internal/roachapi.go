@@ -38,7 +38,7 @@ func (r *roach) Start() {
 	router := gin.Default()
 
 	// Health check endpoint
-	router.GET("/api/health", nil)
+	router.GET("/api/health", r.health)
 
 	// Runner related endpoints
 	router.GET("/api/runners", r.readRunners)
@@ -46,7 +46,7 @@ func (r *roach) Start() {
 	router.GET("/api/runner/:name", r.readRunner)
 	router.GET("/api/runner/:name/output", r.readRunnerOutput)
 	router.GET("/api/runner/:name/stream", r.runnerStreamEvents)
-	router.DELETE("/api/runner/:name", r.deleteWorker)
+	router.DELETE("/api/runner/:name", r.deleteRunner)
 
 	// Static content provisioning
 	router.Static("/static/", "/tmp/static")
@@ -129,8 +129,8 @@ func (r *roach) addRunner(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"status": "OK"})
 }
 
-// Handle for deleting a worker
-func (r *roach) deleteWorker(c *gin.Context) {
+// Handle for deleting a runner
+func (r *roach) deleteRunner(c *gin.Context) {
 	name := c.Param("name")
 	r.runnerLock.Lock()
 	defer r.runnerLock.Unlock()
@@ -212,8 +212,6 @@ func (r *roach) runnerStreamEvents(c *gin.Context) {
 	clientId := uuid.New().String()
 
 	r.runnerLock.Lock()
-	defer r.runnerLock.Unlock()
-
 	runner := r.runners[name]
 
 	if runner == nil {
@@ -224,6 +222,7 @@ func (r *roach) runnerStreamEvents(c *gin.Context) {
 	log.Println("New subscriber ", clientId)
 	channel := runner.registerClient(clientId)
 	closeNotify := c.Writer.CloseNotify()
+	r.runnerLock.Unlock()
 
 	c.Stream(func(w io.Writer) bool {
 		msg := <-channel
@@ -236,6 +235,10 @@ func (r *roach) runnerStreamEvents(c *gin.Context) {
 			runner.unregisterClient(clientId)
 			return false
 		default:
+			if runner.Status != statusRunning {
+				c.SSEvent("done", "true")
+				return true
+			}
 			c.SSEvent("message", string(msg))
 			return true
 		}
