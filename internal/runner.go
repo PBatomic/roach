@@ -56,6 +56,23 @@ func (r *runner) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// GetStatusColor is used to provide color to tailwindcss div class
+func (r *runner) GetStatusColor() string {
+	switch r.Status {
+	case statusSuccess:
+		return "bg-lime-500"
+	case statusFailed:
+		return "bg-rose-600"
+	case statusTimeout:
+		return "bg-rose-400"
+	case statusUserTerminated:
+		return "bg-slate-600"
+	case statusRunning:
+		return "bg-sky-600"
+	}
+	return "bg-transparent"
+}
+
 func newRunner(name string, cmd string, args string, timeout int) *runner {
 	runner := &runner{
 		RunnerName: name,
@@ -132,10 +149,13 @@ func (w *runner) unregisterClient(id string) {
 
 // End process using cancler
 func (w *runner) kill() error {
-	err := w.cmd.Process.Kill()
-	w.Status = statusUserTerminated
-	if err != nil {
-		return err
+	if w.Status == statusRunning {
+		err := w.cmd.Process.Kill()
+		if err != nil {
+			return err
+		}
 	}
+	w.Status = statusUserTerminated
+
 	return nil
 }
