@@ -6,34 +6,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://unpkg.com/htmx.org@1.9.6"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
-    <link href="/static/my.css" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    
+    <link href="/static/main.css" rel="stylesheet">
+
     <title>Roach dashboard</title>
 </head>
 
 <body class="bg-white">
-    <div class="md:container md:mx-auto min-h-screen bg-slate-100 text-sm px-12 rounded-lg text-gray-800"> <!-- Content wrapper -->
+    <div class="md:container md:mx-auto min-h-screen bg-slate-100 text-sm px-12 rounded-lg text-gray-800">
+        <!-- Content wrapper -->
+        <div class="origin-center"></div>
+        
         <h1 class="text-3xl font-bold pt-12 text-center">ROACH</h1>
-        <h1 class="text-1xl font-bold pb-12 text-center text-gray-600">DASHBOARD</h1>
-        <div class="table w-full pb-2 cursor-pointer pt-12" hx-trigger="load, every 3s" hx-get="/dashboard/runners" hx-swap="innerHTML"
-        hx-target="#runnerlist">
+        <h1 class="text-1xl font-bold text-center text-gray-600">DASHBOARD</h1>
+        <div class="flex items-center justify-center "><img class="max-h-7" src="/static/img/roach.svg" alt="kunvole"></div>
+        <div class="table w-full pb-2 cursor-pointer pt-12" hx-trigger="load, every 3s" hx-get="/dashboard/runners"
+            hx-swap="innerHTML" hx-target="#runnerlist">
             <div class="table-header-group ">
-                <div class="table-row bg-slate-300 ">
-                    <div class="table-cell text-left pl-2 pb-4 pt-4 border-t border-gray-500">Runner name</div>
-                    <div class="table-cell text-left pl-2 border-t border-gray-500">Command</div>
-                    <div class="table-cell text-left pl-2 border-t border-gray-500">Status</div>
-                    <div class="table-cell text-left pl-2 border-t border-gray-500">Action</div>
+                <div class="table-row bg-slate-400 ">
+                    <div class="table-cell text-left pl-2 pb-4 pt-4 border-t border-l border-gray-500">Runner name</div>
+                    <div class="table-cell text-left pl-2 border-t  border-gray-500">Command</div>
+                    <div class="table-cell text-left pl-2 border-t  border-gray-500">Status</div>
+                    <div class="table-cell text-left pl-2 border-t border-r border-gray-500">Terminate</div>
                 </div>
             </div>
             <div class="table-row-group" id="runnerlist">
-                <div class="content-center"><img alt="Loading..." class="atomimg" 
-                    width="50" src="/static/img/svg-loaders/tail-spin.svg"/>
+                <div class="content-center"><img alt="Loading..." class="atomimg" width="50"
+                        src="/static/img/svg-loaders/tail-spin.svg" />
                 </div>
             </div>
         </div>
         <div id="consoleOut"></div>
         
+        <!-- Quick hack to satisfy tailwing crawler to give me my dynamic colors! -->
+        <div class="bg-lime-500 bg-rose-600 bg-rose-400 bg-slate-600 bg-sky-600"></div>
     </div>
 </body>
 

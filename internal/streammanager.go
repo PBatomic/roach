@@ -16,6 +16,7 @@ func newStreamManager() *streamManager {
 }
 
 // Subscribes client to http stream
+// Thread-safe method
 func (s *streamManager) Subscribe(id string) chan []byte {
 	s.managerLock.Lock()
 	channel := make(chan []byte)
@@ -25,6 +26,7 @@ func (s *streamManager) Subscribe(id string) chan []byte {
 }
 
 // Unsubscribes client
+// Tread-safe method
 func (s *streamManager) Unsubscribe(id string) {
 	s.managerLock.Lock()
 

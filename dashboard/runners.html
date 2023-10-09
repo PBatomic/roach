@@ -3,11 +3,11 @@
         >
        
         
-        <div class="table-cell border-b border-gray-500 pl-2 pb-2 " hx-trigger="click" hx-target="#consoleOut" hx-get="/dashboard/liveout?runnerName={{$key}}" hx-swap="innerHTML">{{ $key }} </div>
+        <div class="table-cell border-b border-l border-gray-500 pl-2 pb-2 " hx-trigger="click" hx-target="#consoleOut" hx-get="/dashboard/liveout?runnerName={{$key}}" hx-swap="innerHTML">{{ $key }} </div>
         <div class="table-cell border-b border-gray-500 p-2" hx-trigger="click" hx-target="#consoleOut" hx-get="/dashboard/liveout?runnerName={{$key}}" hx-swap="innerHTML">{{ $value.CmdString }} {{ $value.Args}}</div>
         <div class="table-cell border-b border-gray-500 {{ $value.GetStatusColor }} p-2"hx-trigger="click" hx-target="#consoleOut" hx-get="/dashboard/liveout?runnerName={{$key}}" hx-swap="innerHTML">{{ $value.Status }}</div>
         
-        <div class="table-cell border-b border-gray-500 p-2 hover:bg-red-300", 
+        <div class="table-cell border-b border-r border-gray-500 p-2 hover:bg-red-300", 
         hx-delete="/api/runner/{{$key}}?silent=true" hx-trigger="click", id="stopButton" hx-target="#consoleOut" hx-swap="innerHTML">Stop</div>  
     </div>
 {{ end }}
