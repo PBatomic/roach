@@ -3,7 +3,7 @@
 <pre><code>
 <div class="consoleOutput font-mono text-xs overflow-y-auto max-h-80 min-h-80
             border rounded-s border-gray-600 bg-gray-300 " hx-ext="sse"
-            sse-connect="/api/runner/{{$.RunnerName}}/stream" hx-swap="beforeend" 
+            sse-connect="/api/runner/{{$.RunnerName}}/eventstream" hx-swap="beforeend" 
             sse-swap="message, done">
 ==== Loaded output history: ====
 <div hx-trigger="load" hx-get="/api/runner/{{$.RunnerName}}/output"></div>

@@ -14,6 +14,11 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	streamTypeHTTPStream = "httpstream"
+	streamTypeEvents     = "eventstream"
+)
+
 type roach struct {
 	listenAddr string
 	authToken  string
@@ -45,7 +50,8 @@ func (r *roach) Start() {
 	router.POST("/api/runner", r.addRunner)
 	router.GET("/api/runner/:name", r.readRunner)
 	router.GET("/api/runner/:name/output", r.readRunnerOutput)
-	router.GET("/api/runner/:name/stream", r.runnerStreamEvents)
+	router.GET("/api/runner/:name/eventstream", r.runnerStreamEvents)
+	router.GET("/api/runner/:name/httpstream", r.runnerStreamHTTP)
 	router.DELETE("/api/runner/:name", r.deleteRunner)
 
 	// Static content provisioning
@@ -99,7 +105,8 @@ func (r *roach) addRunner(c *gin.Context) {
 	if err := c.BindJSON(&rReq); err != nil {
 		log.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code": 400, "message": "Invalid json message received", "error": err.Error()})
+			"code": 400, "message": "Invalid json message received", "error": err.Error(),
+		})
 		return
 	}
 
@@ -124,7 +131,8 @@ func (r *roach) addRunner(c *gin.Context) {
 	if err != nil {
 		log.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code": 400, "message": "Runner unable to start", "error": err})
+			"code": 400, "message": "Runner unable to start", "error": err,
+		})
 		return
 	}
 
@@ -220,6 +228,15 @@ func (r *roach) readRunnerOutput(c *gin.Context) {
 
 // Handle for providing clients with stream of combined stdout/stderr
 func (r *roach) runnerStreamEvents(c *gin.Context) {
+	r.runnerStream(c, streamTypeEvents)
+}
+
+func (r *roach) runnerStreamHTTP(c *gin.Context) {
+	r.runnerStream(c, streamTypeHTTPStream)
+}
+
+// Handle for providing clients with stream of combined stdout/stderr
+func (r *roach) runnerStream(c *gin.Context, streamType string) {
 	name := c.Param("name")
 	clientId := uuid.New().String()
 
@@ -250,13 +267,21 @@ func (r *roach) runnerStreamEvents(c *gin.Context) {
 			return false
 		default:
 			if runner.Status != statusRunning {
-				c.SSEvent("done", "true")
+				if streamType == streamTypeEvents {
+					c.SSEvent("done", "true")
+				} else {
+					c.Writer.Write([]byte("EOF"))
+				}
 				r.runnerLock.Lock()
 				runner.unregisterClient(clientId)
 				r.runnerLock.Unlock()
 				return false
 			}
-			c.SSEvent("message", string(msg))
+			if streamType == streamTypeEvents {
+				c.SSEvent("message", string(msg))
+			} else {
+				c.Writer.Write(msg)
+			}
 			return true
 		}
 	})
